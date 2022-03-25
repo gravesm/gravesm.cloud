@@ -1,0 +1,22 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - gravesm.cloud.resources:
+        resources:
+          - name: widget-a
+            widget: resource:widget-c
+
+          - name: widget-b
+            frobbers:
+              - resource:frobber-1
+
+          - name: frobber-1
+            widgets:
+              - resource:widget-c
+              - resource:widget-d
+
+          - name: widget-c
+
+          - name: widget-d
+
+          - name: frobber-2
