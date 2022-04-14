@@ -1,22 +1,16 @@
 - hosts: localhost
   gather_facts: false
+  vars_files:
+    - resources.yml
   tasks:
-    - gravesm.cloud.resources:
-        resources:
-          - name: widget-a
-            widget: resource:widget-c
+    - name: cloud_1
+      gravesm.aws.resources:
+        state: "{{ state | default('present') }}"
+      register: cloud_1
 
-          - name: widget-b
-            frobbers:
-              - resource:frobber-1
+    - debug:
+        msg: "{{ cloud_1 }}"
 
-          - name: frobber-1
-            widgets:
-              - resource:widget-c
-              - resource:widget-d
-
-          - name: widget-c
-
-          - name: widget-d
-
-          - name: frobber-2
+    - name: cloud_2
+      gravesm.aws.resources:
+        state: "{{ state | default('present') }}"

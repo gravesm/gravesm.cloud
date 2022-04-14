@@ -1,37 +1,66 @@
 import concurrent.futures
+import functools
+import operator
 import re
-import time
 from graphlib import TopologicalSorter
 
 import yaml
 
 
-REREG = re.compile(r"resource:(\S+)")
+REREG = re.compile(r"resource:((\w+)\S+)")
 
 
-def create_resource(resource):
-    time.sleep(3)
-    return resource
+def get_value(data, path):
+    while path:
+        key = path.pop(0)
+        data = data[key]
+    return data
 
 
-def create(resources):
-    created = []
+def replace_reference(context, match):
+    ref = match.group(1)
+    return get_value(context, ref.split("."))
+
+
+def resolve_refs(node, context):
+    if isinstance(node, dict):
+        resolved = {}
+        for k, v in node.items():
+            resolved[k] = resolve_refs(v, context)
+        return resolved
+    elif isinstance(node, list):
+        return [resolve_refs(i, context) for i in node]
+    else:
+        replacer = functools.partial(replace_reference, context)
+        return REREG.sub(replacer, node)
+
+
+def run(resources, client, state):
+    current = {}
     graph = {}
     sorter = TopologicalSorter()
     for resource in resources:
         name = resource["name"]
         graph[name] = resource
-        sorter.add(name, *REREG.findall(yaml.dump(resource)))
+        if state == "present":
+            sorter.add(name, *map(operator.itemgetter(1), REREG.findall(yaml.dump(resource))))
+        elif state == "absent":
+            for item in map(operator.itemgetter(1), REREG.findall(yaml.dump(resource))):
+                sorter.add(item, name)
 
     sorter.prepare()
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        while sorter.is_active():
-            futures = []
-            for node in sorter.get_ready():
-                 futures.append(executor.submit(create_resource, graph[node]))
-            done, _ = concurrent.futures.wait(futures)
-            for future in done:
+        while sorter:
+            futures = {}
+            for name in sorter.get_ready():
+                if state == "present":
+                    node = resolve_refs(graph[name], current)
+                    futures[executor.submit(client.present, node)] = name
+                elif state == "absent":
+                    futures[executor.submit(client.absent, graph[name])] = name
+            for future in concurrent.futures.as_completed(futures):
                 result = future.result()
-                created.append(result)
-                sorter.done(result["name"])
-    return created
+                name = futures[future]
+                current[name] = result
+                sorter.done(name)
+    return current
