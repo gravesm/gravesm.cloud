@@ -1,4 +1,4 @@
-cloud_1:
+gravesm.aws.resources/cloud_1:
   - name: bucket_02
     Type: AWS::S3::Bucket
     Properties:
@@ -17,7 +17,7 @@ cloud_1:
     Properties:
       BucketName: ansible-declared-state-03
 
-cloud_2:
+gravesm.aws.resources/cloud_2:
   - name: bucket_01
     Type: AWS::S3::Bucket
     Properties:
