@@ -1,0 +1,4 @@
+plugin_routing:
+  action:
+    resources:
+      redirect: gravesm.cloud.resource

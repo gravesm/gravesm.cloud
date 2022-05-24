@@ -35,16 +35,18 @@ def resolve_refs(node, context):
         return REREG.sub(replacer, node)
 
 
-def run(resources, client, state):
-    current = {}
+def run(desired_state, current_state, client, state):
     graph = {}
     sorter = TopologicalSorter()
-    for resource in resources:
+    for resource in desired_state:
         name = resource["name"]
         graph[name] = resource
         if state == "present":
-            sorter.add(name, *map(operator.itemgetter(1), REREG.findall(yaml.dump(resource))))
+            sorter.add(
+                name, *map(operator.itemgetter(1), REREG.findall(yaml.dump(resource)))
+            )
         elif state == "absent":
+            sorter.add(name)
             for item in map(operator.itemgetter(1), REREG.findall(yaml.dump(resource))):
                 sorter.add(item, name)
 
@@ -54,13 +56,23 @@ def run(resources, client, state):
             futures = {}
             for name in sorter.get_ready():
                 if state == "present":
-                    node = resolve_refs(graph[name], current)
+                    node = resolve_refs(graph[name], current_state)
                     futures[executor.submit(client.present, node)] = name
                 elif state == "absent":
-                    futures[executor.submit(client.absent, graph[name])] = name
+                    if name not in current_state:
+                        sorter.done(name)
+                        continue
+                    node = resolve_refs(graph[name], current_state)
+                    futures[executor.submit(client.absent, node)] = name
             for future in concurrent.futures.as_completed(futures):
                 result = future.result()
                 name = futures[future]
-                current[name] = result
+                if result:
+                    current_state[name] = result
+                else:
+                    try:
+                        del current_state[name]
+                    except KeyError:
+                        pass
                 sorter.done(name)
-    return current
+    return current_state

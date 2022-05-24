@@ -6,11 +6,17 @@
     - name: cloud_1
       gravesm.aws.resources:
         state: "{{ state | default('present') }}"
-      register: cloud_1
-
-    - debug:
-        msg: "{{ cloud_1 }}"
+        connection:
+          profile_name: content
 
     - name: cloud_2
       gravesm.aws.resources:
         state: "{{ state | default('present') }}"
+        connection:
+          profile_name: content
+
+    - name: cloud_3
+      gravesm.kubernetes.resources:
+        state: "{{ state | default('present') }}"
+        connection:
+          kubeconfig: ~/.kube/config

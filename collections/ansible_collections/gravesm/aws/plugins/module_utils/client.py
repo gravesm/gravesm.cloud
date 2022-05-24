@@ -95,11 +95,17 @@ class AwsClient:
         return result.resource
 
     def _get_resource(self, resource):
-        result = self.client.get_resource(TypeName=resource.type_name, Identifier=resource.identifier)
-        return resource.resource_type.make(json.loads(result["ResourceDescription"]["Properties"]))
+        result = self.client.get_resource(
+            TypeName=resource.type_name, Identifier=resource.identifier
+        )
+        return resource.resource_type.make(
+            json.loads(result["ResourceDescription"]["Properties"])
+        )
 
     def _create(self, resource):
-        result = self.client.create_resource(TypeName=resource.type_name, DesiredState=json.dumps(resource.properties))
+        result = self.client.create_resource(
+            TypeName=resource.type_name, DesiredState=json.dumps(resource.properties)
+        )
         self._wait(result["ProgressEvent"]["RequestToken"])
         return self._get_resource(resource)
 
@@ -111,13 +117,19 @@ class AwsClient:
             elif v != existing.properties.get(k):
                 patch.append(op("replace", k, v))
         if patch:
-            result = self.client.update_resource(TypeName=existing.type_name, Identifier=existing.identifier, PatchDocument=str(patch))
+            result = self.client.update_resource(
+                TypeName=existing.type_name,
+                Identifier=existing.identifier,
+                PatchDocument=str(patch),
+            )
             self._wait(result["ProgressEvent"]["RequestToken"])
             return self._get_resource(desired)
         return existing
 
     def _delete(self, resource):
-        result = self.client.delete_resource(TypeName=resource.type_name, Identifier=resource.identifier)
+        result = self.client.delete_resource(
+            TypeName=resource.type_name, Identifier=resource.identifier
+        )
         self._wait(result["ProgressEvent"]["RequestToken"])
         return resource
 
@@ -127,5 +139,5 @@ class AwsClient:
             WaiterConfig={
                 "Delay": 10,
                 "MaxAttempts": 6,
-            }
+            },
         )

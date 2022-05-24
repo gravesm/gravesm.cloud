@@ -1,9 +1,4 @@
 gravesm.aws.resources/cloud_1:
-  - name: bucket_02
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: ansible-declared-state-02
-
   - name: bucket_01
     Type: AWS::S3::Bucket
     Properties:
@@ -11,6 +6,11 @@ gravesm.aws.resources/cloud_1:
       Tags:
         - Key: otherbucket
           Value: resource:bucket_02.Properties.Arn
+
+  - name: bucket_02
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ansible-declared-state-02
 
   - name: bucket_03
     Type: AWS::S3::Bucket
@@ -22,3 +22,17 @@ gravesm.aws.resources/cloud_2:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: ansible-declared-state-04
+
+gravesm.kubernetes.resources/cloud_3:
+  - name: test_configmap
+    kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: test-map
+      namespace: resource:test_namespace.metadata.name
+
+  - name: test_namespace
+    kind: Namespace
+    apiVersion: v1
+    metadata:
+      name: test-namespace

@@ -2,8 +2,8 @@
 
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.gravesm.aws.plugins.module_utils.client import AwsClient
 from ansible_collections.gravesm.cloud.plugins.module_utils.resource import run
+from ansible_collections.gravesm.kubernetes.plugins.module_utils.client import K8sClient
 
 
 ARG_SPEC = {
@@ -16,7 +16,7 @@ ARG_SPEC = {
 
 def main():
     module = AnsibleModule(argument_spec=ARG_SPEC)
-    client = AwsClient(**module.params.get("connection"))
+    client = K8sClient(**module.params.get("connection"))
     result = run(
         module.params.get("resources", []),
         module.params.get("current_state", {}),
